@@ -1,43 +1,45 @@
 # devops-netology
 
-    1. Найдите полный хеш и комментарий коммита, хеш которого начинается на aefea.
-        aefead2207ef7e2aa5dc81a34aedf0cad4c32545  
-        git show --format="%H" -s  aefea
-    2. Какому тегу соответствует коммит 85024d3?  
-        v0.12.23
-         git tag --points-at 85024d3
-    3. Сколько родителей у коммита b8d720? Напишите их хеши.  
-        2 родителей.   
-        56cd7859e05c36c06b56d013b55a252d0bb7e158   
-        9ea88f22fc6269854151c571162c5bcf958bee2b
-        git show --format="%P" -s  b8d720
-    4. Перечислите хеши и комментарии всех коммитов которые были сделаны между тегами v0.12.23 и v0.12.24.
-        b14b74c4939dcab573326f4e3ee2a62e23e12f89 [Website] vmc provider links  
-        3f235065b9347a758efadc92295b540ee0a5e26e Update CHANGELOG.md  
-        6ae64e247b332925b872447e9ce869657281c2bf registry: Fix panic when server is unreachable  
-        5c619ca1baf2e21a155fcdb4c264cc9e24a2a353 website: Remove links to the getting started guide's old location  
-        06275647e2b53d97d4f0a19a0fec11f6d69820b5 Update CHANGELOG.md  
-        d5f9411f5108260320064349b757f55c09bc4b80 command: Fix bug when using terraform login on Windows  
-        4b6d06cc5dcb78af637bbb19c198faff37a066ed Update CHANGELOG.md  
-        dd01a35078f040ca984cdd349f18d0b67e486c35 Update CHANGELOG.md  
-        225466bc3e5f35baa5d07197bbc079345b77525e Cleanup after v0.12.23 release  
-        git log --pretty=oneline  v0.12.23..v0.12.24^
-    5. Найдите коммит в котором была создана функция func providerSource, ее определение в коде выглядит так func providerSource(...) 
-       (вместо троеточего перечислены аргументы).
-        8c928e83589d90a031f811fae52a81be7153e82f
-        git log -S "func providerSource"
-    6. Найдите все коммиты в которых была изменена функция globalPluginDirs
-        78b12205587fe839f10d946ea3fdc06719decb05
-        52dbf94834cb970b510f2fba853a5b49ad9b1a46
-        41ab0aef7a0fe030e84018973a64135b11abcd70
-        66ebff90cdfaa6938f26f908c7ebad8d547fea17
-        8364383c359a6b738a436d1b7745ccdce178df47
-        git grep globalPluginDirs
-        git log -L :globalPluginDirs:plugins.go
-    7. Кто автор функции synchronizedWriters?
-        Martin Atkins
-        git log -S synchronizedWriters --format="%an"
+    5. Ознакомьтесь с графическим интерфейсом VirtualBox, посмотрите как выглядит виртуальная машина, которую создал для вас Vagrant, какие аппаратные ресурсы ей выделены. Какие ресурсы выделены по-умолчанию?
+        RAM 1024 Mb,
+        HDD 64 Gb,
+        Processor 1 CPU
+    6. Ознакомьтесь с возможностями конфигурации VirtualBox через Vagrantfile: документация. Как добавить оперативной памяти или ресурсов процессора виртуальной машине?
+        1) Изменить Vagrantfile следующим образом:
+         Vagrant.configure("2") do |config|
+                config.vm.box = "bento/ubuntu-20.04"
+                config.vm.provider "virtualbox" do |v|
+                        v.memory = 2048
+                        v.cpus = 2
+                end
+         end
+       2) Ввести команды
+        vagrant halt
+        vagrant up
+    8. Ознакомиться с разделами man bash, почитать о настройках самого bash:
 
-  
-  
-   
+        какой переменной можно задать длину журнала history, и на какой строчке manual это описывается?
+            команда history-size  строка 2237
+        что делает директива ignoreboth в bash?
+            Даннаядиректива позволяет добавить в журнала history только одну из 2х следующих друг за другом
+            повторяющихся строк, а так же не добавляет строки, начинающиеся с пробела
+             
+    9. В каких сценариях использования применимы скобки {} и на какой строчке man bash это описано?
+        Строка 985. {} используются для перечислений параметров  a{d,c,b}e == ade, ace, abe или с цифрами file{1,2} == file1, file2 .
+        Так же {x..y[..incr]} перечислятся параметры от x до y включительно, если x и y целые числа или символы. incr - дельта. По умолчанию равна 1 (или -1 если y < x)
+        Строка 1053. Используется для позиционных параметров, которые состоя из более чем одной цифры и если надо выделить название
+        параметра от других символов, не являющихся его частью
+    10. Основываясь на предыдущем вопросе, как создать однократным вызовом touch 100000 файлов? А получилось ли создать 300000?
+        touch {1..100000}
+        touch {1..300000} -bash: /usr/bin/touch: Argument list too long
+    11. В man bash поищите по /\[\[. Что делает конструкция [[ -d /tmp ]]
+        Конструкция возвращает true или false в зависимости от того, существует ли /tmp и является ли директорией
+    12. Основываясь на знаниях о просмотре текущих (например, PATH) и установке новых переменных; командах, которые мы рассматривали, добейтесь в выводе
+        type -a bash в виртуальной машине наличия первым пунктом в списке:
+        mkdir -p /tmp/new_path_directory/
+        cp /usr/bin/bash /tmp/new_path_directory/
+        PATH=/tmp/new_path_directory:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+    13. Чем отличается планирование команд с помощью batch и at?
+        at запускает команды в заданное время
+        batch запускает, когда позволяет уровень нагрузки системы
+    14. 
