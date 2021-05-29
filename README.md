@@ -9,7 +9,12 @@
             grep -c <some_string> <some_file> 
        
     3. Какой процесс с PID 1 является родителем для всех процессов в вашей виртуальной машине Ubuntu 20.04?
-            /sbin/init
+            vagrant@vagrant:~$ ps aux
+            USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+            root           1  2.0  1.1 167540 11424 ?        Ss   14:04   0:01 /sbin/init
+            root           2  0.0  0.0      0     0 ?        S    14:04   0:00 [kthreadd]
+            root           3  0.0  0.0      0     0 ?        I<   14:04   0:00 [rcu_gp]
+
              
     4. Как будет выглядеть команда, которая перенаправит вывод stderr ls на другую сессию терминала?
             если наша сессия /dev/pts/x
