@@ -2,59 +2,72 @@
 
 
     1. 
-    	c=a+b результатом является строка
-    	d=1+2 результатом является строка, но вместо a и b поставлены их значения
-    	e=3   результатом является результат выполнения суммирования значений a и b благодаря двойным скобкам, которые
-    		  позволяют выполнить арифметическое действие со значениями переменных
+    	Какое значение будет присвоено переменной c?
+    		TypeError: unsupported operand type(s) for +: 'int' and 'str'
 
-    2. 	while ((1==1))
-		do
-		curl http://localhost:8080
-		if (($? != 0))
-		then
-		date >> curl.log
-		else
-		break
-		fi
-		done
+    	Как получить для переменной c значение 12?
+    		c = str(a) + b
+
+    	Как получить для переменной c значение 3?
+    		c = a + int(b)
+
+    2. 	#!/usr/bin/env python3
+
+		import os
+
+		repo_dir =  "~/netology/sysadm-homeworks/"
+
+		bash_command = ["cd {}".format(repo_dir), "git status"]
+		result_os = os.popen(' && '.join(bash_command)).read()
+		is_change = False
+		for result in result_os.split('\n'):
+		    if result.find('modified') != -1:
+		        prepare_result = result.replace('\tmodified:   ', '')
+		        print(repo_dir + prepare_result)
 
     
     3. 
-		#!/usr/bin/env bash
+		#!/usr/bin/env python3
 
-		arrayIp=("192.168.0.1" "173.194.222.113"  "87.250.250.242")
-		port=80
+		import os
+		import sys
 
-		for ip in ${arrayIp[@]}
-		do
-			for number in {0..4}
-			do
-				nc -zvw3 $ip $port 2>>log
-			done
-		done
+		if len(sys.argv) > 1:
+		    repo_dir = sys.argv[1]
+		else:
+		    repo_dir =  "~/netology/sysadm-homeworks/"
+
+		bash_command = ["cd {}".format(repo_dir), "git status"]
+		result_os = os.popen(' && '.join(bash_command)).read()
+		is_change = False
+		for result in result_os.split('\n'):
+		    if result.find('modified') != -1:
+		        prepare_result = result.replace('\tmodified:   ', '')
+		        print(repo_dir + prepare_result)
 
         
     4. 
-		#!/usr/bin/env bash
+		#!/usr/bin/env python3
 
-		arrayIp=("192.168.0.1" "173.194.222.113"  "87.250.250.242")
-		port=80
+		import socket
+		import time
 
-		while ((1==1))
-		do
-			for ip in ${arrayIp[@]}
-			do
-				for number in {0..4}
-				do
-					nc -zvw3 $ip $port 2>> log
-					if (($? != 0))
-					then
-						echo $ip >> error
-						exit 0
-					fi
-				done
-			done
-		done
+		urlList = ["drive.google.com", "mail.google.com", "google.com"]
+		lastIpList = [socket.gethostbyname(url) for url in urlList]
+
+		while(1>0):
+		    for i in range(len(urlList)):
+
+		        currentIp = socket.gethostbyname(urlList[i])
+
+		        if lastIpList[i] != currentIp:
+		            print ("[ERROR] {0} IP mismatch: {1} {2}".format(urlList[i], lastIpList[i], currentIp))
+		        else:
+		            print ("{0} - {1}".format(urlList[i],socket.gethostbyname(urlList[i])))
+
+		        lastIpList[i] = currentIp
+		    print('\n')
+		    time.sleep(1)
 
     5.
 		#!/usr/bin/env bash
