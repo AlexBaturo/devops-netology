@@ -1,35 +1,73 @@
 # devops-netology
 
 
-    1. Посмотрите на сценарий ниже и ответьте на вопрос: "Подходит ли в этом сценарии использование докера? Или лучше подойдет виртуальная машина, физическая машина? Или возможны разные варианты?"
+    1. 
+	Dockerfile:
+		FROM centos
 
-    	Высоконагруженное монолитное java веб-приложение; Виртуальная машина - позволит масштабировать приложение
-    	
-    	Go-микросервис для генерации отчетов; Микросервис удобнее поместить в контейнер, тк соответсвует коцепции докера
-    	
-    	Nodejs веб-приложение; Для более тестирования и разворачивания веб-приложение лучше поместить в контейнер
-    	
-    	Мобильное приложение c версиями для Android и iOS; Сборка данных приложений требует множество зависимостей, для упрощения разработки и тестирования лучше использовать докер.
-    	
-    	База данных postgresql используемая, как кэш; Для большей скорости данную базу лучше разместить на физической машине
-    	
-    	Шина данных на базе Apache Kafka; тк это сервис, можно поместить в контейнер
-    	
-    	Очередь для Logstash на базе Redis; Чтобы оградиться от потери данных, лучше разместить на ВМ
-    	
-    	Elastic stack для реализации логирования продуктивного веб-приложения - три ноды elasticsearch, два logstash и две ноды kibana; тк каждая нода является сервисом, можно разместить их в контейнере
-    	Мониторинг-стек на базе prometheus и grafana; можно разместить в контейнере
+		RUN curl -o /opt/ponysay-3.0.3-1.noarch.rpm https://raw.githubusercontent.com/rpmsphere/noarch/master/p/ponysay-3.0.3-1.noarch.rpm \
+		    && rpm -i /opt/ponysay-3.0.3-1.noarch.rpm \
+		    && yum install python3 -y \
+		    && ln -s python3 /usr/bin/python
 
-    	Mongodb, как основное хранилище данных для java-приложения; Чтобы не потерять данные и для более высокой масштабируемости можно разместить на ВМ
+		ENTRYPOINT ["/usr/bin/ponysay"]
+		CMD ["Hey, netology”]
 
-    	Jenkins-сервер; можно разместить в контейнере как типичное веб-приложение
+	Ссылка на dockerhub:
+		https://hub.docker.com/r/alexbatrrr/pony/tags
 
-    2.	https://hub.docker.com/repository/docker/alexbatrrr/netology
+	Скриншот в закрепленных файлах:
+		pony - вывод команды
+    2.	
+    amazoncorreto Dockerfile:
+		FROM amazoncorretto
 
-    3. 	root@3b196cd3f0a4:/info# ls
-		fileFromCentos	fileFromHost
+		RUN curl -o /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo \
+		    && rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key \
+		    && amazon-linux-extras install epel -y \
+		    && yum install java-11-openjdk-devel -y \
+		    && yum install jenkins -y
 
-		root@3b196cd3f0a4:/info# cat *
-		textFromCentosFile
-		textFromHost
+		EXPOSE 8080
 
+		CMD java -jar --add-opens java.base/java.lang=ALL-UNNAMED /usr/lib/jenkins/jenkins.war --enable-future-java --httpPort=8080
+
+	ubuntu Dockerfile:
+		FROM ubuntu:latest
+
+		RUN apt-get update \
+		    && apt install wget gnupg tzdata -y \
+		    && ln -fs /usr/share/zoneinfo/Europe/Moscow /etc/localtime && dpkg-reconfigure -f noninteractive tzdata \
+		    && wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | apt-key add - \
+		    && sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list' \
+		    && apt-get update \
+		    && apt-get install openjdk-11-jdk jenkins -y 
+
+		EXPOSE 9090
+
+		CMD java -jar --add-opens java.base/java.lang=ALL-UNNAMED /usr/share/jenkins/jenkins.war --enable-future-java --httpPort=9090
+
+	ссылка на dockerhub:
+		https://hub.docker.com/r/alexbatrrr/jenkins/tags
+
+	Скриншоты в закрепленных файлах:
+		JenkinsInterface1 - веб-интерфейс amazoncorretto
+		JenkinsInterface2 - веб-интерфейс ubuntu
+		Console1 - скриншот amazoncorretto
+		Console2 - скриншот ubuntu
+    3. 	
+    Dockerfile:
+		FROM node
+
+		RUN git clone https://github.com/simplicitesoftware/nodejs-demo.git /opt/nodejs-demo \
+		    && npm install --prefix /opt/nodejs-demo/ \
+		    && npm audit fix --prefix /opt/nodejs-demo/
+
+		EXPOSE 3000
+
+		CMD npm start --prefix /opt/nodejs-demo/ --host 0.0.0.0 --port 3000
+
+    Скриншоты в закрепленных файлах:
+		curl - вызов curl 
+		inspect - вместо docker network cli
+		networkLs - вместо docker network cli
