@@ -2,72 +2,43 @@
 
 
     1. 
-	Dockerfile:
-		FROM centos
+	Электронные чеки в json виде
+	Лучше хранить в базе данных типа «ключ-значение» или в документоориентированной базе данных, тк объектами являются чеки в формате json.
+	Если достаточно по ключу получать значения, то можно выбрать первую, если необходимо делать запросы на основе содержимого, то вторую.
 
-		RUN curl -o /opt/ponysay-3.0.3-1.noarch.rpm https://raw.githubusercontent.com/rpmsphere/noarch/master/p/ponysay-3.0.3-1.noarch.rpm \
-		    && rpm -i /opt/ponysay-3.0.3-1.noarch.rpm \
-		    && yum install python3 -y \
-		    && ln -s python3 /usr/bin/python
+	Склады и автомобильные дороги для логистической компании
+	Лучше использовать графовую базу данных. Такие базы данных используют ребра и узлы для представления данных, что
+	отлично подойдет в данном случае. Склады - узлы, автомобильные дороги - ребра
 
-		ENTRYPOINT ["/usr/bin/ponysay"]
-		CMD ["Hey, netology”]
+	Генеалогические деревья
+	В данном случае лучше использовать сетевую базу данных, в отличие от графовой она использует иерархическую модель данных, из-за чего
+	невозможно будет создать произвольные связи между узлами. Это свойство необходимо для создания генеалогических деревьев
 
-	Ссылка на dockerhub:
-		https://hub.docker.com/r/alexbatrrr/pony/tags
+	Кэш идентификаторов клиентов с ограниченным временем жизни для движка аутенфикации
+	Для быстрого доступа к данных лучше использовать базу данных типа «ключ-значение» в частности Redis или memcached
 
-	Скриншот в закрепленных файлах:
-		pony - вывод команды
-    2.	
-    amazoncorreto Dockerfile:
-		FROM amazoncorretto
+	Отношения клиент-покупка для интернет-магазина
+	Правильнее использовать SQL базу данных тк такая база позволит создавать внешние ключи для объединения с другими таблицами,
+	например, таблица с информацией о товаре или с данными клиента
 
-		RUN curl -o /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo \
-		    && rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key \
-		    && amazon-linux-extras install epel -y \
-		    && yum install java-11-openjdk-devel -y \
-		    && yum install jenkins -y
+	2.
+	Данные записываются на все узлы с задержкой до часа (асинхронная запись)
+	тк в любой момент времени не обеспечивается согласованность данных (асинхронная запись) => PA система в CAP и PA/EL в PACELC
 
-		EXPOSE 8080
+	При сетевых сбоях, система может разделиться на 2 раздельных кластера
+	тк система продолжает работать после разделения, значит в ней присутсвует устойчивость к разделению, но 
+	данные в кластерах могут отличаться => PA система в CAP и PA/EC или PA/EL в PACELC
 
-		CMD java -jar --add-opens java.base/java.lang=ALL-UNNAMED /usr/lib/jenkins/jenkins.war --enable-future-java --httpPort=8080
+	Система может не прислать корректный ответ или сбросить соединение
+	В подобной системе отсутствует доступность про остальные параметры ничего неизвестно => возможно, CP в CAP и CP/EL в PACELC 
 
-	ubuntu Dockerfile:
-		FROM ubuntu:latest
+	3. 
+	Могут ли в одной системе сочетаться принципы BASE и ACID? Почему?
+	BASE и ACID не могут сочитаться в одной системе, тк имеют идеологические отличия относительно согласованности данных.
+	ACID подразумевает немедленную согласованность данных системой, в то время как в BASE за согласованность отвечает разработчик
+	и единственное условие, чтобы эта согласованность когда-нибудь наступило.
 
-		RUN apt-get update \
-		    && apt install wget gnupg tzdata -y \
-		    && ln -fs /usr/share/zoneinfo/Europe/Moscow /etc/localtime && dpkg-reconfigure -f noninteractive tzdata \
-		    && wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | apt-key add - \
-		    && sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list' \
-		    && apt-get update \
-		    && apt-get install openjdk-11-jdk jenkins -y 
-
-		EXPOSE 9090
-
-		CMD java -jar --add-opens java.base/java.lang=ALL-UNNAMED /usr/share/jenkins/jenkins.war --enable-future-java --httpPort=9090
-
-	ссылка на dockerhub:
-		https://hub.docker.com/r/alexbatrrr/jenkins/tags
-
-	Скриншоты в закрепленных файлах:
-		JenkinsInterface1 - веб-интерфейс amazoncorretto
-		JenkinsInterface2 - веб-интерфейс ubuntu
-		Console1 - скриншот amazoncorretto
-		Console2 - скриншот ubuntu
-    3. 	
-    Dockerfile:
-		FROM node
-
-		RUN git clone https://github.com/simplicitesoftware/nodejs-demo.git /opt/nodejs-demo \
-		    && npm install --prefix /opt/nodejs-demo/ \
-		    && npm audit fix --prefix /opt/nodejs-demo/
-
-		EXPOSE 3000
-
-		CMD npm start --prefix /opt/nodejs-demo/ --host 0.0.0.0 --port 3000
-
-    Скриншоты в закрепленных файлах:
-		curl - вызов curl 
-		inspect - вместо docker network cli
-		networkLs - вместо docker network cli
+	4.
+	pub/sub это система состоящая из отправителя сообщений (Издатель) и принимающих эти сообщения(подписчик), и брокера сообщений. В данной моделе подписчики напрямую не связаны с издателем, раздачей сообщений занимается брокер сообщений.
+	тк система имеет свойство "фиксация некоторых значений с временем жизни" это может вызвать проблемы при большой очереди сообщений и низкой скорости обработки сообщений подписчиками, сообщения могу не попасть ко всем подписчикам и просто удалиться из очереди. Но второе свойство - "реакция на истечение таймаута", поэтому система должна как-то реагировать на истечение времени жизни данных,
+	возможно, повторной отправкой данных. Необходимо учитывать такую ситуацию и не допустить повторную отправку данных подписчикам, которые уже их получили.
