@@ -2,63 +2,48 @@
 
 
     1. 
-    	Server version:		8.0.27 MySQL Community Server - GPL
+    	вывода списка БД - \l
+		подключения к БД - \c database_name
+		вывода списка таблиц \dt 
+		вывода описания содержимого таблиц \d+ 
+		выхода из psql \q
 
-		+----+----------------+-------+
-		| id | title          | price |
-		+----+----------------+-------+
-		|  2 | My little pony |   500 |
-		+----+----------------+-------+
-		1 row in set (0.01 sec)
+  	2.	
+		Используя таблицу pg_stats, найдите столбец таблицы orders с наибольшим средним значением размера элементов в байтах.
+		Приведите в ответе команду, которую вы использовали для вычисления и полученный результат.
+		
+		select attname from pg_stats where tablename = 'orders' and avg_width = ( select MAX(avg_width) from pg_stats where tablename = 'orders' ) ;
 
-  	2.
-  		mysql> select user, host, password_lifetime, max_questions, plugin from mysql.user where user = 'test';
-		+------+-----------+-------------------+---------------+-----------------------+
-		| user | host      | password_lifetime | max_questions | plugin                |
-		+------+-----------+-------------------+---------------+-----------------------+
-		| test | localhost |               180 |           100 | mysql_native_password |
-		+------+-----------+-------------------+---------------+-----------------------+
-		1 row in set (0.00 sec)
-
-		mysql> select User_attributes from mysql.user where user = 'test';
-		+-------------------------------------------------------------------------------------------------------------------------------------+
-		| User_attributes                                                                                                                     |
-		+-------------------------------------------------------------------------------------------------------------------------------------+
-		| {"metadata": {"fname": "James", "lname": "Pretty"}, "Password_locking": {"failed_login_attempts": 3, "password_lock_time_days": 0}} |
-		+-------------------------------------------------------------------------------------------------------------------------------------+
-		1 row in set (0.00 sec)
+		 attname 
+		---------
+		 title
+		(1 row)
 
 	3.
-		Исследуйте, какой engine используется в таблице БД test_db и приведите в ответе.
+		ALTER TABLE orders RENAME TO orders_backup;
 
-		SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'test_db';
-		+------------+--------+
-		| TABLE_NAME | ENGINE |
-		+------------+--------+
-		| orders     | InnoDB |
-		+------------+--------+
-		1 row in set (0.00 sec)
+		CREATE TABLE orders (LIKE orders_backup INCLUDING ALL);
 
-		Измените engine и приведите время выполнения и запрос на изменения из профайлера в ответе:
+		create table orders_1 (LIKE orders INCLUDING ALL, check ( price>499 ) ) inherits (orders);
+		create table orders_2 (LIKE orders INCLUDING ALL, check ( price<=499 ) ) inherits (orders);
 
-		mysql> ALTER TABLE orders ENGINE = MyISAM;
-		Query OK, 5 rows affected (0.86 sec)
-		Records: 5  Duplicates: 0  Warnings: 0
+		create rule orders_insert_to_1 as on insert to orders
+		where ( price>499)
+		do instead insert into orders_1 values(NEW.*);
 
-		mysql> ALTER TABLE orders ENGINE = InnoDB;
-		Query OK, 5 rows affected (1.15 sec)
-		Records: 5  Duplicates: 0  Warnings: 0
+		create rule orders_insert_to_2 as on insert to orders
+		where ( price<=499)
+		do instead insert into orders_2 values(NEW.*);
+
+		insert into orders (id, title, price)
+		select id, title, price from orders_backup;
+
+		drop table orders_backup cascade;
+
+		Можно ли было изначально исключить "ручное" разбиение при проектировании таблицы orders?
+		Да, если если бы действия, приведенные выше, были бы проделаны заранее, до начала использования таблицы.
 
 	4.
-		[mysqld]
-		pid-file        = /var/run/mysqld/mysqld.pid
-		socket          = /var/run/mysqld/mysqld.sock
-		datadir         = /var/lib/mysql
-		secure-file-priv= NULL
-
-		innodb_flush_method = O_DSYNC
-		innodb_flush_log_at_trx_commit = 2
-		innodb_file_per_table = 1
-		innodb_log_buffer_size = 1M
-		innodb_buffer_pool_size = 2300M
-		innodb_log_file_size = 100M
+		CREATE UNIQUE INDEX orders_1_title_idx ON public.orders_1 USING btree (title);	
+		CREATE UNIQUE INDEX orders_2_title_idx ON public.orders_2 USING btree (title);
+		CREATE UNIQUE INDEX orders_title ON public.orders USING btree (title);
