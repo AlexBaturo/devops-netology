@@ -2,48 +2,48 @@
 
 
     1. 
-    	вывода списка БД - \l
-		подключения к БД - \c database_name
-		вывода списка таблиц \dt 
-		вывода описания содержимого таблиц \d+ 
-		выхода из psql \q
+    	1. 	Ответить на четыре вопроса представленных в разделе "Легенда".
+		    	Тк проект стартует уже лучше всего использовать технологии, которые уже применялись.
 
-  	2.	
-		Используя таблицу pg_stats, найдите столбец таблицы orders с наибольшим средним значением размера элементов в байтах.
-		Приведите в ответе команду, которую вы использовали для вычисления и полученный результат.
-		
-		select attname from pg_stats where tablename = 'orders' and avg_width = ( select MAX(avg_width) from pg_stats where tablename = 'orders' ) ;
+				*Какой тип инфраструктуры будем использовать для этого проекта: изменяемый или не изменяемый?
+					тк разработчики привыкли использовать Docker, уже есть большая база Kubernetes конфигураций, будет использоваться неизменяемый тип инфраструктуры
 
-		 attname 
-		---------
-		 title
-		(1 row)
+				*Будет ли центральный сервер для управления инфраструктурой?
+					нет, тк  предполагается, что будет использоваться неизменяемый тип инфраструктуры. Попробуем заранее все шаблонизировать и подготовим контейнеры, 
+					в которых не придется ничего донастраивать.
+
+				*Будут ли агенты на серверах?
+					тоже, что и в предыдущем ответе
+					
+				*Будут ли использованы средства для управления конфигурацией или инициализации ресурсов?
+					Было бы правильно использовать средства инициализации ресурсов для создания инфраструктуры под наш сервис.
+
+		2. 	Какие инструменты из уже используемых вы хотели бы использовать для нового проекта?
+
+				Docker - для запуска приложений
+				Kubernetes - для управления контейнерами
+				Packer - для определения образа виртуальных машин
+				Terraform - для создания инфраструктуры
+
+		3. 	Хотите ли рассмотреть возможность внедрения новых инструментов для этого проекта?
+				Для сборки пакетов Jenkins или gitlabCI,
+				Для сборки логов состояния сервиса Zabbix
+				Для создания бэкапов Bareos
+
+		Если для ответа на эти вопросы недостаточно информации, то напишите какие моменты уточните на совещании.
+			Достаточно ли нам будет контейнеров или часть архитектуры придется размещать на ВМ ?
+			Придется ли нам конфигурировать ПО после установки и не повлечет ли это конфигурирование создание большого количества контейнера под каждый случай.
+			При таком варианте стоит посмотреть в сторону изменяемой инфраструктуры и использовать средства для управления конфигураций
+
+	2. 
+		alex@alex-VirtualBox:~/Downloads$ terraform --version
+		Terraform v1.0.11
+		on linux_amd64
 
 	3.
-		ALTER TABLE orders RENAME TO orders_backup;
-
-		CREATE TABLE orders (LIKE orders_backup INCLUDING ALL);
-
-		create table orders_1 (LIKE orders INCLUDING ALL, check ( price>499 ) ) inherits (orders);
-		create table orders_2 (LIKE orders INCLUDING ALL, check ( price<=499 ) ) inherits (orders);
-
-		create rule orders_insert_to_1 as on insert to orders
-		where ( price>499)
-		do instead insert into orders_1 values(NEW.*);
-
-		create rule orders_insert_to_2 as on insert to orders
-		where ( price<=499)
-		do instead insert into orders_2 values(NEW.*);
-
-		insert into orders (id, title, price)
-		select id, title, price from orders_backup;
-
-		drop table orders_backup cascade;
-
-		Можно ли было изначально исключить "ручное" разбиение при проектировании таблицы orders?
-		Да, если если бы действия, приведенные выше, были бы проделаны заранее, до начала использования таблицы.
-
-	4.
-		CREATE UNIQUE INDEX orders_1_title_idx ON public.orders_1 USING btree (title);	
-		CREATE UNIQUE INDEX orders_2_title_idx ON public.orders_2 USING btree (title);
-		CREATE UNIQUE INDEX orders_title ON public.orders USING btree (title);
+		alex@alex-VirtualBox:~/Downloads$ terraform --version
+		Terraform v1.0.11
+		on linux_amd64
+		alex@alex-VirtualBox:~/Downloads$ terraform_old --version
+		Terraform v1.0.9
+		on linux_amd64
