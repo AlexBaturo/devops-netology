@@ -1,31 +1,29 @@
 provider "aws" {
-	region                  = "us-west-2"
+	region  = "us-west-2"
 }
 
-resource "aws_vpc" "myVpc" {
-	cidr_block = "172.20.0.0/16"
+variable "TFC_WORKSPACE_NAME" {
+  type = string
+  default = ""
 }
 
-resource "aws_subnet" "mySubnet" {
-  	vpc_id            = aws_vpc.myVpc.id
-  	cidr_block        = "172.20.10.0/24"
-  	availability_zone = "us-west-2a"
+locals {
+  workspace = var.TFC_WORKSPACE_NAME != "" ? var.TFC_WORKSPACE_NAME : terraform.workspace
 }
 
-resource "aws_network_interface" "myNetInterface" {
-  	subnet_id   = aws_subnet.mySubnet.id
-  	private_ips = ["172.20.10.100"]
-}
-
-resource "aws_volume_attachment" "ebs_att" {
-  device_name = "/dev/sdh"
-  volume_id   = aws_ebs_volume.myVolume.id
-  instance_id = aws_instance.myInstance.id
-}
-
-resource "aws_ebs_volume" "myVolume" {
-  availability_zone = "us-west-2a"
-  size              = 1
+locals {
+	web_instance_type_map = {
+		stage = "t2.micro"
+		prod = "t2.large"
+	}
+	web_instance_count_map = {
+		stage = 1
+		prod = 2
+	}
+	instances = {
+		"t3.micro" = data.aws_ami.myUbuntu.id
+		"t3.large" = data.aws_ami.myUbuntu.id
+	}
 }
 
 data "aws_ami" "myUbuntu" {
@@ -44,17 +42,31 @@ data "aws_ami" "myUbuntu" {
 	owners = ["099720109477"]
 }
 
-resource "aws_instance" "myInstance" {
-	ami           = data.aws_ami.myUbuntu.id
-	instance_type = "t2.micro"
+module "ec2_instance" {
+	source  = "terraform-aws-modules/ec2-instance/aws"
+	version = "~> 3.0"
+
+	name = "myInstance"
+
+	ami                    = data.aws_ami.myUbuntu.id
+	instance_type          = local.web_instance_type_map[local.workspace]
+
+	availability_zone = "us-west-2a"
+	count = local.web_instance_count_map[local.workspace]
+
+  tags = {
+    Name = "HelloWorld"
+  }
+}
+
+resource "aws_instance" "myInstance1" {
+	for_each = local.instances
+
+	ami           = each.value
+	instance_type = each.key
 	availability_zone = "us-west-2a"
 
-	network_interface {
-    	network_interface_id = aws_network_interface.myNetInterface.id
-    	device_index         = 0
-  	}
-
 	tags = {
-		Name = "HelloWorld"
+		Name = "HelloWorld_each"
 	}
 }

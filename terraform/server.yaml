@@ -1,0 +1,19 @@
+repos:
+
+- id: /.*/
+
+  apply_requirements: [approved, mergeable]
+
+  allowed_overrides: [workflow]
+  allow_custom_workflows: true
+
+workflows:
+  default:
+    plan:
+      steps:
+      - init
+      - plan:
+          extra_args: ["-lock=false"]
+    apply:
+      steps:
+      - apply
