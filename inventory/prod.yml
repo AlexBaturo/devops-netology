@@ -1,17 +1,15 @@
 ---
-  el:
-    hosts:
-      centos7:
-        ansible_connection: docker
-  deb:
-    hosts:
-      ubuntu:
-        ansible_connection: docker
-  local:
-    hosts:
-      localhost:
-        ansible_connection: local
-  fc:
-    hosts:
-      fedora:
-        ansible_connection: docker
+elasticsearch:
+  hosts:
+    elastic:
+      ansible_connection: docker
+
+kibana_host:
+  hosts:
+    kibana:
+      ansible_connection: docker
+
+logstash_host:
+  hosts:
+    logstash:
+      ansible_connection: docker

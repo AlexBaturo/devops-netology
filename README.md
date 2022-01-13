@@ -1,236 +1,123 @@
-    1. 
-        ansible-playbook -i inventory/test.yml  site.yml
+	6. Попробуйте запустить playbook на этом окружении с флагом --check.
 
-        TASK [Print OS] ****************************************************************************************************************
-        ok: [localhost] => {
-            "msg": "Ubuntu"
-        }
+		alex@alex-N46JV:~/Desktop/Projects/devops-netology/playbook$ ansible-playbook -i inventory/prod.yml site.yml --check
 
-        TASK [Print fact] **************************************************************************************************************
-        ok: [localhost] => {
-            "msg": 12
-        }
+		PLAY [Install Java] *****************************************************************************************************************
 
-    2. Изменил в group_vars/all/examp.yml "12" на "all default fact"
+		TASK [Gathering Facts] **************************************************************************************************************
+		ok: [elastic]
+		ok: [kibana]
+		ok: [logstash]
 
-    3.  Запустил для контейнера для создания окружения:
-            docker run -dt --name ubuntu ubuntu
-            docker run -dt --name centos7 centos:7
+		TASK [Set facts for Java 11 vars] ***************************************************************************************************
+		ok: [kibana]
+		ok: [elastic]
+		ok: [logstash]
 
-            в контейнер ubuntu установил python3 
+		TASK [Upload .tar.gz file containing binaries from local storage] *******************************************************************
+		changed: [elastic]
+		changed: [logstash]
+		changed: [kibana]
 
-    4.  
-        alex@alex-N46JV:~/Desktop/Projects/devops-netology$ ansible-playbook -i inventory/prod.yml  site.yml
-        PLAY [Print os facts] ********************************************************************************************************
+		TASK [Ensure installation dir exists] ***********************************************************************************************
+		changed: [logstash]
+		changed: [elastic]
+		changed: [kibana]
 
-        TASK [Gathering Facts] *******************************************************************************************************
-        ok: [ubuntu]
-        ok: [centos7]
+		TASK [Extract java in the installation directory] ***********************************************************************************
+		fatal: [logstash]: FAILED! => {"changed": false, "msg": "dest '/opt/jdk/11.0.11' must be an existing dir"}
+		fatal: [elastic]: FAILED! => {"changed": false, "msg": "dest '/opt/jdk/11.0.11' must be an existing dir"}
+		fatal: [kibana]: FAILED! => {"changed": false, "msg": "dest '/opt/jdk/11.0.11' must be an existing dir"}
 
-        TASK [Print OS] **************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "CentOS"
-        }
-        ok: [ubuntu] => {
-            "msg": "Ubuntu"
-        }
+		PLAY RECAP **************************************************************************************************************************
+		elastic                    : ok=5    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+		kibana                     : ok=5    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+		logstash                   : ok=5    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
 
-        TASK [Print fact] ************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "el"
-        }
-        ok: [ubuntu] => {
-            "msg": "deb"
-        }
+		С флагом --check не создались директории /opt/jdk/11.0.11
 
-        PLAY RECAP *******************************************************************************************************************
-        centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+	7. Запустите playbook на prod.yml окружении с флагом --diff. Убедитесь, что изменения на системе произведены.
 
-    5.  Изменил в group_vars/deb/examp.yml "deb" на "deb default fact"
-        Изменил в group_vars/el/examp.yml "el" на "el default fact"
+		Часть лога ansible, на который видны произведенные изменения.
 
-    6.  
-        alex@alex-N46JV:~/Desktop/Projects/devops-netology$ ansible-playbook -i inventory/prod.yml  site.yml
-        PLAY [Print os facts] ********************************************************************************************************
+		TASK [Export environment variables] *************************************************************************************************
+		--- before
+		+++ after: /home/alex/.ansible/tmp/ansible-local-695190vsacai8b/tmpaa7wra_l/jdk.sh.j2
+		@@ -0,0 +1,5 @@
+		+# Warning: This file is Ansible Managed, manual changes will be overwritten on next playbook run.
+		+#!/usr/bin/env bash
+		+
+		+export JAVA_HOME=/opt/jdk/11.0.11
+		+export PATH=$PATH:$JAVA_HOME/bin
+		\ No newline at end of file
 
-        TASK [Gathering Facts] *******************************************************************************************************
-        ok: [ubuntu]
-        ok: [centos7]
+		changed: [logstash]
+		--- before
+		+++ after: /home/alex/.ansible/tmp/ansible-local-695190vsacai8b/tmp9ir_ddmn/jdk.sh.j2
+		@@ -0,0 +1,5 @@
+		+# Warning: This file is Ansible Managed, manual changes will be overwritten on next playbook run.
+		+#!/usr/bin/env bash
+		+
+		+export JAVA_HOME=/opt/jdk/11.0.11
+		+export PATH=$PATH:$JAVA_HOME/bin
+		\ No newline at end of file
 
-        TASK [Print OS] **************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "CentOS"
-        }
-        ok: [ubuntu] => {
-            "msg": "Ubuntu"
-        }
+		changed: [elastic]
+		--- before
+		+++ after: /home/alex/.ansible/tmp/ansible-local-695190vsacai8b/tmpumd7mkio/jdk.sh.j2
+		@@ -0,0 +1,5 @@
+		+# Warning: This file is Ansible Managed, manual changes will be overwritten on next playbook run.
+		+#!/usr/bin/env bash
+		+
+		+export JAVA_HOME=/opt/jdk/11.0.11
+		+export PATH=$PATH:$JAVA_HOME/bin
+		\ No newline at end of file
 
-        TASK [Print fact] ************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "el default fact"
-        }
-        ok: [ubuntu] => {
-            "msg": "deb default fact"
-        }
+		changed: [kibana]
 
-        PLAY RECAP *******************************************************************************************************************
-        centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
+	8. Повторно запустите playbook с флагом --diff и убедитесь, что playbook идемпотентен.
 
-    7.
-        ansible-vault encrypt group_vars/el/examp.yml
-        ansible-vault encrypt group_vars/deb/examp.yml
+		та же часть лога ansible, что и в пункте 7 при повторном запуске ansible с флагом --diff
 
-    8.
-        alex@alex-N46JV:~/Desktop/Projects/devops-netology$ ansible-playbook -i inventory/prod.yml  site.yml --ask-vault-pass
-        Vault password: 
+		TASK [Export environment variables] *************************************************************************************************
+		ok: [logstash]
+		ok: [kibana]
+		ok: [elastic]
 
-        PLAY [Print os facts] ********************************************************************************************************
+	9. playbook устанавливает elasticsearch, kibana, logstash на хосты elasticsearch, kibana_host, logstash_host соответсвенно и производит настройку установленнго ПО. 
 
-        TASK [Gathering Facts] *******************************************************************************************************
-        ok: [ubuntu]
-        ok: [centos7]
+		Для хостов устанавливаются следующие параметры и тэги:
 
-        TASK [Print OS] **************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "CentOS"
-        }
-        ok: [ubuntu] => {
-            "msg": "Ubuntu"
-        }
+		all:
+			vars:
+				- java_jdk_version
+				- java_oracle_jdk_package
+			tags:
+				- java
 
-        TASK [Print fact] ************************************************************************************************************
-        ok: [centos7] => {
-            "msg": "el default fact"
-        }
-        ok: [ubuntu] => {
-            "msg": "deb default fact"
-        }
+		elasticsearch:
+			vars: 
+				- elastic_version
+				- elastic_home
+				- elastic_port
+			tags:
+				- elastic
+		
+		kibana_host:
+			vars:
+				- kibana_version
+				- kibana_home
+			tags:
+				- kibana
 
-        PLAY RECAP *******************************************************************************************************************
-        centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
+		logstash_host:
+			vars:
+				- logstash_version
+				- logstash_home
+			tags:
+				- logstash
 
-    9. 
-        Для работы с control node выбрал плагин local
 
-    10. 
-        в inventory/prod.yml дописано следующее:
-            local:
-                hosts:
-                  localhost:
-                    ansible_connection: local
-    11. 
-        alex@alex-N46JV:~/Desktop/Projects/devops-netology$ ansible-playbook -i inventory/prod.yml  site.yml --ask-vault-pass
-        Vault password: 
 
-        PLAY [Print os facts] ********************************************************************************************************
 
-        TASK [Gathering Facts] *******************************************************************************************************
-        ok: [localhost]
-        ok: [ubuntu]
-        ok: [centos7]
 
-        TASK [Print OS] **************************************************************************************************************
-        ok: [localhost] => {
-            "msg": "Ubuntu"
-        }
-        ok: [centos7] => {
-            "msg": "CentOS"
-        }
-        ok: [ubuntu] => {
-            "msg": "Ubuntu"
-        }
-
-        TASK [Print fact] ************************************************************************************************************
-        ok: [localhost] => {
-            "msg": "all default fact"
-        }
-        ok: [centos7] => {
-            "msg": "el default fact"
-        }
-        ok: [ubuntu] => {
-            "msg": "deb default fact"
-        }
-
-        PLAY RECAP *******************************************************************************************************************
-        centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
-
-    Необязательная часть
-
-    1. 
-        ansible-vault decrypt group_vars/el/examp.yml
-        ansible-vault decrypt group_vars/deb/examp.yml
-
-    2.  
-        ansible-vault encrypt_string 'PaSSw0rd' --name 'some_fact'
-
-        some_fact: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          30383861623230613832306339656162326133396266366634663065616266346634343163343332
-          3563313937356463616639623166353339616363646263370a303238613038363633386137656636
-          31666533643730323964396237303230323662343738336130393663373230333637386364333831
-          3466346131313436620a306431376230363435313466633461313030656633396339333261343237
-          6431
-
-        полученное значение записал в файл group_vars/all/examp.yml вместо "all default fact"
-
-    3.  
-        alex@alex-N46JV:~/Desktop/Projects/devops-netology$ ansible-playbook -i inventory/prod.yml  site.yml --ask-vault-pass
-        Vault password: 
-
-        PLAY [Print os facts] ********************************************************************************************************
-
-        TASK [Gathering Facts] *******************************************************************************************************
-        ok: [localhost]
-        ok: [ubuntu]
-        ok: [centos7]
-
-        TASK [Print OS] **************************************************************************************************************
-        ok: [localhost] => {
-            "msg": "Ubuntu"
-        }
-        ok: [centos7] => {
-            "msg": "CentOS"
-        }
-        ok: [ubuntu] => {
-            "msg": "Ubuntu"
-        }
-
-        TASK [Print fact] ************************************************************************************************************
-        ok: [localhost] => {
-            "msg": "PaSSw0rd"
-        }
-        ok: [centos7] => {
-            "msg": "el default fact"
-        }
-        ok: [ubuntu] => {
-            "msg": "deb default fact"
-        }
-
-        PLAY RECAP *******************************************************************************************************************
-        centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-        ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0 
-
-    4. 
-        в inventory/prod.yml добавлена часть:
-              fc:
-                hosts:
-                  fedora:
-                    ansible_connection: docker
-        Создан файл group_vars/fc/examp.yml
-            ---
-            some_fact: "fc default fact"
-
-    5.
-        Создан скрипт
-
-        docker run -dt --name fedora pycontribs/fedora 2> /dev/null || docker start fedora
-        docker run -dt --name ubuntu ubuntu 2> /dev/null || docker start ubuntu
-        docker run -dt --name centos7 centos:7 2> /dev/null || docker start centos7
-        ansible-playbook -i inventory/prod.yml  site.yml --vault-password-file ~/.vault_pass.txt
-        docker stop fedora centos7 ubuntu
