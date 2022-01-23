@@ -1,160 +1,119 @@
 ---
-- name: Install Java
-  hosts: all
-  tasks:
-    - name: Set facts for Java 11 vars
-      set_fact:
-        java_home: "/opt/jdk/{{ java_jdk_version }}"
-      tags:
-        - java
-    - name: Upload .tar.gz file containing binaries from local storage
-      copy:
-        src: "{{ java_oracle_jdk_package }}"
-        dest: "/tmp/jdk-{{ java_jdk_version }}.tar.gz"
-      register: download_java_binaries
-      until: download_java_binaries is succeeded
-      tags:
-        - java
-    - name: Ensure installation dir exists
-      become: true
-      file:
-        state: directory
-        path: "{{ java_home }}"
-      tags:
-        - java
-    - name: Extract java in the installation directory
-      become: true
-      unarchive:
-        copy: false
-        src: "/tmp/jdk-{{ java_jdk_version }}.tar.gz"
-        dest: "{{ java_home }}"
-        extra_opts: [--strip-components=1]
-        creates: "{{ java_home }}/bin/java"
-      tags:
-        - java
-    - name: Export environment variables
-      become: true
-      template:
-        src: jdk.sh.j2
-        dest: /etc/profile.d/jdk.sh
-      tags:
-        - java
 - name: Install Elasticsearch
   hosts: elasticsearch
-  tasks:
-    - name: Upload tar.gz Elasticsearch from remote URL
-      get_url:
-        url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elastic_version }}-linux-x86_64.tar.gz"
-        dest: "/tmp/elasticsearch-{{ elastic_version }}-linux-x86_64.tar.gz"
-        mode: 0755
-        timeout: 60
-        force: false
-        validate_certs: false
-      register: get_elastic
-      until: get_elastic is succeeded
-      tags: elastic
-    - name: Create directrory for Elasticsearch
-      file:
-        state: directory
-        path: "{{ elastic_home }}"
-      tags:
-        - elastic
-    - name: Extract Elasticsearch in the installation directory
+  handlers:
+    - name: restart Elasticsearch
       become: true
-      unarchive:
-        copy: false
-        src: "/tmp/elasticsearch-{{ elastic_version }}-linux-x86_64.tar.gz"
-        dest: "{{ elastic_home }}"
-        extra_opts: [--strip-components=1]
-        creates: "{{ elastic_home }}/bin/elasticsearch"
+      service:
+        name: elasticsearch
+        state: restarted
+  tasks:
+    - name: "Download Elasticsearch's rpm"
+      get_url:
+        url: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elk_stack_version }}-x86_64.rpm"
+        dest: "/tmp/elasticsearch-{{ elk_stack_version }}-x86_64.rpm"
+      register: download_elastic
+      until: download_elastic is succeeded
       tags:
         - elastic
-    - name: Set environment Elastic
+    - name: Install Elasticsearch
+      become: true
+      yum:
+        name: "/tmp/elasticsearch-{{ elk_stack_version }}-x86_64.rpm"
+        state: present
+      notify: restart Elasticsearch
+    - name: Configure Elasticsearch
       become: true
       template:
-        src: templates/elk.sh.j2
-        dest: /etc/profile.d/elk.sh
+        src: elasticsearch.yml.j2
+        dest: /etc/elasticsearch/elasticsearch.yml
+      notify: restart Elasticsearch
       tags:
         - elastic
+
 - name: Install Kibana
-  hosts: kibana_host
-  tasks:
-    - name: Upload tar.gz Kibana from remote URL
-      get_url:
-        url: "https://artifacts.elastic.co/downloads/kibana/kibana-{{ kibana_version }}-linux-x86_64.tar.gz"
-        dest: "/tmp/kibana-{{ kibana_version }}-linux-x86_64.tar.gz"
-        mode: 0755
-        timeout: 60
-        force: false
-        validate_certs: false
-      register: get_kibana
-      until: get_kibana is succeeded
-      tags:
-          - kibana
-    - name: Create directrory for Kibana
-      file:
-        state: directory
-        path: "{{ kibana_home }}"
-      tags:
-        - kibana
-    - name: Extract Kibana in the installation directory
+  hosts: kibana
+  handlers:
+    - name: restart Kibana
       become: true
-      unarchive:
-        copy: false
-        src: "/tmp/kibana-{{ kibana_version }}-linux-x86_64.tar.gz"
-        dest: "{{ kibana_home }}"
-        extra_opts: [--strip-components=1]
-        creates: "{{ kibana_home }}/bin/kibana"
+      service:
+        name: kibana
+        state: restarted
+  tasks:
+    - name: "Download Kibana's rpm"
+      get_url:
+        url: "https://artifacts.elastic.co/downloads/kibana/kibana-{{ elk_stack_version }}-x86_64.rpm"
+        dest: "/tmp/kibana-{{ elk_stack_version }}-x86_64.rpm"
+      register: download_kibana
+      until: download_kibana is succeeded
       tags:
         - kibana
-    - name: Recognize elasticsearch ip and port
-      set_fact:
-        elastic_host: "{{ hostvars['elastic']['ansible_default_ipv4']['address'] }}"
-        elastic_port: "{{ hostvars['elastic']['elastic_port'] }}"
+    - name: Install Kibana
+      become: true
+      yum:
+        name: "/tmp/kibana-{{ elk_stack_version }}-x86_64.rpm"
+        state: present
+      notify: restart Kibana
+      tags:
+        - kibana
     - name: Configure Kibana
+      become: true
       template:
         src: kibana.yml.j2
-        dest: "{{ kibana_home }}/config/kibana.yml"
+        dest: /etc/kibana/kibana.yml
+      notify: restart Kibana
       tags:
         - kibana
-- name: Install Logstash
-  hosts: logstash_host
-  tasks:
-    - name: Upload tar.gz Logstash from remote URL
-      get_url:
-        url: "https://artifacts.elastic.co/downloads/logstash/logstash-{{ logstash_version }}-linux-x86_64.tar.gz"
-        dest: "/tmp/logstash-{{ logstash_version }}-linux-x86_64.tar.gz"
-        mode: 0755
-        timeout: 60
-        force: false
-        validate_certs: false
-      register: get_logstash
-      until: get_logstash is succeeded
-      tags:
-          - logstash
-    - name: Create directrory for logstash
-      file:
-        state: directory
-        path: "{{ logstash_home }}"
-      tags:
-        - logstash
-    - name: Extract Logstash in the installation directory
+
+- name: Install Filebeat
+  hosts: filebeat
+  handlers:
+    - name: restart Filebeat
       become: true
-      unarchive:
-        copy: false
-        src: "/tmp/logstash-{{ logstash_version }}-linux-x86_64.tar.gz"
-        dest: "{{ logstash_home }}"
-        extra_opts: [--strip-components=1]
-        creates: "{{ logstash_home }}/bin/logstash"
+      service:
+        name: filebeat
+        state: restarted
+  tasks:
+    - name: "Download Filebeat's rpm"
+      get_url:
+        url: "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-{{ elk_stack_version }}-x86_64.rpm"
+        dest: "/tmp/filebeat-{{ elk_stack_version }}-x86_64.rpm"
+      register: download_filebeat
+      until: download_filebeat is succeeded
       tags:
-        - logstash
-    - name: Recognize elasticsearch ip and port
-      set_fact:
-        elastic_host: "{{ hostvars['elastic']['ansible_default_ipv4']['address'] }}"
-        elastic_port: "{{ hostvars['elastic']['elastic_port'] }}"
-    - name: Configure Logstash
+        - filebeat
+    - name: Install Filebeat
+      become: true
+      yum:
+        name: "/tmp/filebeat-{{ elk_stack_version }}-x86_64.rpm"
+        state: present
+      notify: restart Filebeat
+      tags:
+        - filebeat
+    - name: Configure Filebeat
+      become: true
       template:
-        src: logstash.conf.j2
-        dest: "{{ logstash_home }}/config/logstash.conf"
+        src: filebeat.yml.j2
+        dest: /etc/filebeat/filebeat.yml
+      notify: restart Filebeat
       tags:
-        - logstash
+        - filebeat
+    - name: Enable module
+      become: true
+      command:
+        cmd: filebeat modules enable system
+        chdir: /usr/share/filebeat/bin
+      register: filebeat_modules
+      changed_when: filebeat_modules.stdout != 'Module system is already enabled'
+      tags:
+        - filebeat
+    - name: Load kibana Dashboard
+      become: true
+      command:
+        cmd: filebeat setup
+        chdir: /usr/share/filebeat/bin
+      register: filebeat_setup
+      changed_when: false
+      until: filebeat_setup is succeeded
+      tags:
+        - filebeat
