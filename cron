@@ -1,0 +1,4 @@
+#для корректной работы необходим root пользователь
+#sudo crontab -u root -e
+
+* * * * * python3 /home/alex/Projects/devops-netology/awesome_logger.py
